@@ -1,0 +1,2 @@
+# 不提交 Node 依赖（backend、frontend 及子目录下任意 node_modules）
+node_modules/

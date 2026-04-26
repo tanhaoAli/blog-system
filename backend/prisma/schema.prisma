@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  username   String    @unique @db.VarChar(50)
+  password   String    @db.VarChar(255)
+  email      String    @unique @db.VarChar(100)
+  avatar_url String?   @db.VarChar(255)
+  role       Role      @default(USER)
+  bio        String?   @db.VarChar(255)
+  github_url String?   @db.VarChar(255)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  articles   Article[]
+  comments   Comment[]
+
+  @@map("users")
+}
+
+model Article {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  content     String    @db.LongText // changed to LongText for rich text storage
+  summary     String?   @db.VarChar(500)
+  cover_image String?   @db.VarChar(255)
+  views       Int       @default(0)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  author_id   Int
+  author      User      @relation(fields: [author_id], references: [id])
+
+  category_id Int?
+  category    Category? @relation(fields: [category_id], references: [id])
+
+  comments    Comment[]
+  tags        ArticleTag[]
+
+  @@map("articles")
+}
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique @db.VarChar(50)
+  created_at DateTime  @default(now())
+  
+  articles   Article[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique @db.VarChar(50)
+  created_at DateTime  @default(now())
+
+  articles   ArticleTag[]
+
+  @@map("tags")
+}
+
+// Many-to-Many relation table for Article and Tag
+model ArticleTag {
+  article_id Int
+  tag_id     Int
+
+  article    Article @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([article_id, tag_id])
+  @@map("article_tags")
+}
+
+model Comment {
+  id         Int       @id @default(autoincrement())
+  content    String    @db.VarChar(1000)
+  created_at DateTime  @default(now())
+
+  article_id Int
+  article    Article   @relation(fields: [article_id], references: [id], onDelete: Cascade)
+
+  user_id    Int
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  parent_id  Int?
+  parent     Comment?  @relation("CommentToComment", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies    Comment[] @relation("CommentToComment")
+
+  @@map("comments")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model SiteStat {
+  id         Int      @id @default(autoincrement())
+  date       String   @unique @db.VarChar(20) // Format: YYYY-MM-DD
+  visits     Int      @default(0)
+  created_at DateTime @default(now())
+
+  @@map("site_stats")
+}
